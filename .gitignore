@@ -1,0 +1,20 @@
+# Python / Virtual Envs
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+
+# Output Artifacts
+outputs/*.png
+outputs/*.jpg
+
+# System Files
+.DS_Store
+Thumbs.dbdata/
+outputs/
