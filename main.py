@@ -23,8 +23,11 @@ def load_and_preprocess_image(image_path: str) -> np.ndarray:
     return gray_image
 
 
-def run_kmeans_segmentation(gray_image: np.ndarray, n_clusters_list=[2, 3, 4]):
+def run_kmeans_segmentation(gray_image: np.ndarray, n_clusters_list=None):
     """Applies K-Means clustering across specified cluster counts."""
+    if n_clusters_list is None:
+        n_clusters_list = [2, 3, 4]
+
     pixels = gray_image.reshape((-1, 1))
     results = {}
 
@@ -86,7 +89,7 @@ def main():
         f"[INFO] Found {len(image_paths)} mammogram scans. Starting batch segmentation..."
     )
     # Process all scans in the dataset
-    for path in image_paths[39]:
+    for path in image_paths:
         filename = os.path.splitext(os.path.basename(path))[0]
         print(f"[PROCESSING] {filename}...")
 
