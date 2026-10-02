@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from skimage import color, io
 from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -75,6 +76,55 @@ def run_kmeans_segmentation(gray_image, n_clusters_list=None):
     return results
 
 
+def validate_kmeans_results(gray_image, results, max_samples=10000):
+    """Compute internal validation metrics for the tested cluster counts."""
+    pixels = gray_image.reshape(-1, 1)
+    validation = {}
+
+    for k, data in results.items():
+        labels = data["segmented_image"].ravel()
+        sample_size = min(max_samples, len(pixels))
+
+        if sample_size < len(pixels):
+            rng = np.random.default_rng(42)
+            indices = np.sort(rng.choice(len(pixels), size=sample_size, replace=False))
+            silhouette = silhouette_score(pixels[indices], labels[indices])
+        else:
+            silhouette = silhouette_score(pixels, labels)
+
+        validation[k] = {
+            "inertia": data["inertia"],
+            "silhouette": float(silhouette),
+            "cluster_sizes": {
+                int(label): int(np.sum(labels == label))
+                for label in np.unique(labels)
+            },
+        }
+
+    return validation
+
+
+def save_validation_visualization(validation, filename, output_dir):
+    """Save inertia and silhouette scores for the tested cluster counts."""
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    ks = list(validation)
+    figure, axes = plt.subplots(1, 2, figsize=(11, 4))
+    axes[0].plot(ks, [validation[k]["inertia"] for k in ks], marker="o")
+    axes[0].set_title(f"Inertia — {filename}")
+    axes[0].set_xlabel("Number of clusters (k)")
+    axes[0].set_ylabel("Inertia")
+    axes[0].set_xticks(ks)
+    axes[1].plot(ks, [validation[k]["silhouette"] for k in ks], marker="o")
+    axes[1].set_title(f"Silhouette score — {filename}")
+    axes[1].set_xlabel("Number of clusters (k)")
+    axes[1].set_ylabel("Silhouette score")
+    axes[1].set_xticks(ks)
+    figure.tight_layout()
+    figure.savefig(output_dir / f"validation_{filename}.png", dpi=200, bbox_inches="tight")
+    plt.close(figure)
+
+
 def save_batch_visualization(gray_image, results, filename, output_dir):
     """Save one visualization containing the original image and segmentations."""
     output_dir = Path(output_dir)
@@ -129,6 +179,11 @@ def main():
         print(f"[PROCESSING] {filename}...")
         gray_image = load_and_preprocess_image(path)
         results = run_kmeans_segmentation(gray_image)
+        validation = validate_kmeans_results(gray_image, results)
+        print("  [VALIDATION]")
+        for k, metrics in validation.items():
+            print(f"    k={k}: inertia={metrics["inertia"]:.4f}, silhouette={metrics["silhouette"]:.4f}")
+        save_validation_visualization(validation, filename, OUTPUT_DIR)
         save_batch_visualization(
             gray_image, results, filename, OUTPUT_DIR
         )
