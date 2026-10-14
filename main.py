@@ -182,7 +182,7 @@ def main():
         validation = validate_kmeans_results(gray_image, results)
         print("  [VALIDATION]")
         for k, metrics in validation.items():
-            print(f"    k={k}: inertia={metrics["inertia"]:.4f}, silhouette={metrics["silhouette"]:.4f}")
+            print(f"    k={k}: inertia={metrics['inertia']:.4f}, silhouette={metrics['silhouette']:.4f}")
         save_validation_visualization(validation, filename, OUTPUT_DIR)
         save_batch_visualization(
             gray_image, results, filename, OUTPUT_DIR
